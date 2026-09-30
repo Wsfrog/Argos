@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Scanner de dependências{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <nav class="nav"><a href="{{ url_for('index') }}">Scanner de dependências</a></nav>
+  <main class="{% block largura %}{% endblock %}">{% block corpo %}{% endblock %}</main>
+</body>
+</html>

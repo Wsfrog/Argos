@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block corpo %}
+<h1>Analisar dependências</h1>
+<p class="mudo">Envie um manifesto do projeto e veja as vulnerabilidades conhecidas, com a versão que corrige cada uma.</p>
+
+{% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
+
+<form class="card form" method="post" action="{{ url_for('scan') }}" enctype="multipart/form-data" id="form">
+  <label class="drop" id="drop">
+    <input type="file" name="arquivo" id="arquivo">
+    <strong id="nome">Escolha um arquivo ou arraste aqui</strong>
+    <span class="mudo">pom.xml, requirements.txt, package-lock.json ou SBOM .json</span>
+  </label>
+
+  <details>
+    <summary>Colar o conteúdo em vez de enviar arquivo</summary>
+    <label for="tipo">Tipo do conteúdo</label>
+    <select id="tipo" name="tipo">
+      {% for m in manifestos %}<option>{{ m }}</option>{% endfor %}
+    </select>
+    <label for="texto">Conteúdo</label>
+    <textarea id="texto" name="texto" rows="7" spellcheck="false"></textarea>
+  </details>
+
+  <p class="mudo nota">Sem consulta ao Maven Central: as dependências transitivas de um pom.xml são resolvidas apenas pelo cache local do Maven (~/.m2).</p>
+
+  <button class="primario" type="submit" id="enviar">Analisar</button>
+</form>
+
+<script>
+  const arq = document.getElementById('arquivo');
+  arq.addEventListener('change', () => {
+    document.getElementById('nome').textContent = arq.files[0] ? arq.files[0].name : 'Escolha um arquivo ou arraste aqui';
+  });
+  document.getElementById('form').addEventListener('submit', () => {
+    const b = document.getElementById('enviar');
+    b.textContent = 'Analisando…';
+    b.classList.add('carregando');
+  });
+</script>
+{% endblock %}

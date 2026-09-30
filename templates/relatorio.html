@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block titulo %}Relatório · {{ arquivo }}{% endblock %}
+{% block largura %}wide{% endblock %}
+{% block corpo %}
+<a class="voltar" href="{{ url_for('index') }}">← Nova análise</a>
+
+<header class="topo">
+  <div>
+    <h1>{{ arquivo }}</h1>
+    <p class="mudo">{{ vulns|length }} vulnerabilidades encontradas</p>
+  </div>
+  {% if vulns %}
+  <div class="acoes">
+    <a class="btn" href="{{ url_for('baixar_pdf', rid=rid) }}">PDF</a>
+    <a class="btn" href="{{ url_for('baixar_csv', rid=rid) }}">CSV</a>
+    <a class="btn" href="{{ url_for('baixar_json', rid=rid) }}">JSON</a>
+  </div>
+  {% endif %}
+</header>
+
+{% if not vulns %}
+<div class="card vazio-ok">Nenhuma vulnerabilidade encontrada. 🎉</div>
+{% else %}
+<section class="stats">
+  {% for s in ordem %}{% if resumo[s] or s != 'UNKNOWN' %}
+  <button type="button" class="stat {{ s|lower }} on" data-sev="{{ s|lower }}">
+    <span class="num">{{ resumo[s] }}</span>
+    <span class="rot">{{ s|lower }}</span>
+  </button>
+  {% endif %}{% endfor %}
+</section>
+
+<section class="barra">
+  <input type="search" id="q" placeholder="Buscar por pacote, CVE ou descrição…">
+  <label class="check"><input type="checkbox" id="fix"> Só com correção disponível</label>
+  <span class="mudo" id="cont"></span>
+</section>
+
+<div class="card tabela">
+  <table id="tab">
+    <thead>
+      <tr><th>Severidade</th><th>Pacote</th><th>Versão</th><th>Corrigida em</th><th>CVE</th></tr>
+    </thead>
+    <tbody>
+    {% for v in vulns %}
+      <tr data-sev="{{ v.sev|lower }}" data-fix="{{ '1' if v.correcao != '-' else '0' }}"
+          data-busca="{{ (v.pacote ~ ' ' ~ v.cve ~ ' ' ~ v.titulo)|lower }}">
+        <td><span class="badge {{ v.sev|lower }}">{{ v.sev|lower }}</span></td>
+        <td class="pkg">{{ v.pacote }}</td>
+        <td class="mono">{{ v.versao }}</td>
+        <td>{% if v.correcao != '-' %}<span class="fix">{{ v.correcao }}</span>{% else %}<span class="mudo">sem correção</span>{% endif %}</td>
+        <td class="cve">
+          {% if v.url %}<a href="{{ v.url }}" target="_blank" rel="noopener noreferrer">{{ v.cve }}</a>{% else %}{{ v.cve }}{% endif %}
+          {% if v.titulo %}<div class="desc">{{ v.titulo }}</div>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="mudo vazio" id="vazio" hidden>Nenhum resultado com esses filtros.</p>
+</div>
+
+<script>
+  const linhas = [...document.querySelectorAll('#tab tbody tr')];
+  const stats = [...document.querySelectorAll('.stat')];
+  const q = document.getElementById('q'), fix = document.getElementById('fix');
+  const cont = document.getElementById('cont'), vazio = document.getElementById('vazio');
+  function aplicar() {
+    const on = new Set(stats.filter(s => s.classList.contains('on')).map(s => s.dataset.sev));
+    const t = q.value.trim().toLowerCase();
+    let n = 0;
+    linhas.forEach(tr => {
+      const ok = on.has(tr.dataset.sev) && (!fix.checked || tr.dataset.fix === '1')
+                 && (!t || tr.dataset.busca.includes(t));
+      tr.hidden = !ok;
+      if (ok) n++;
+    });
+    cont.textContent = n + ' de ' + linhas.length + ' exibidas';
+    vazio.hidden = n !== 0;
+  }
+  stats.forEach(s => s.addEventListener('click', () => { s.classList.toggle('on'); aplicar(); }));
+  q.addEventListener('input', aplicar);
+  fix.addEventListener('change', aplicar);
+  aplicar();
+</script>
+{% endif %}
+{% endblock %}
